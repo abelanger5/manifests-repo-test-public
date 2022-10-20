@@ -1,0 +1,114 @@
+---
+# Source: web/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nginx-test-web
+  labels:
+    helm.sh/chart: web-0.131.0
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: nginx-test
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: web/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-test-web
+  labels:
+    helm.sh/chart: web-0.131.0
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: nginx-test
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  
+  type: ClusterIP
+  
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: nginx-test
+---
+# Source: web/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-test-web
+  labels:
+    helm.sh/chart: web-0.131.0
+    app.kubernetes.io/name: web
+    app.kubernetes.io/instance: nginx-test
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  
+  
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web
+      app.kubernetes.io/instance: nginx-test
+  template:
+    metadata:
+      annotations:
+        helm.sh/revision: "1"
+      labels:
+        app.kubernetes.io/name: web
+        app.kubernetes.io/instance: nginx-test
+    spec:
+      serviceAccountName: nginx-test-web
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        null
+      containers:
+        - name: web
+          securityContext:
+            null
+          image: "nginx:latest"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          
+          
+          
+          
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 256Mi
+          env:
+            # Porter default environment variables
+            - name: PORTER_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PORTER_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: PORTER_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: PORTER_POD_IMAGE_TAG
+              value: "latest"
+            - name: PORTER_POD_REVISION
+              value: "1"
+            
+          
+          
+      tolerations:
+        - key: "removable"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
